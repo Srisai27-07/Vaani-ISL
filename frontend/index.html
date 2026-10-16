@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vaani-ISL | Real-Time Indian Sign Language Interpreter</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js & Controls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- MediaPipe Hands & Camera Utils -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+
+  <!-- Typography: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-void: #14191d;
+      --bg-dark: #0a0d10;
+      --accent-blue: #0050FF;
+      --accent-cyan: #00D6FF;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+      background-color: var(--bg-void);
+      color: #F8FAFC;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
+    }
+
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Ultra-clean Luxury Glassmorphism */
+    .glass-nav {
+      background: rgba(14, 18, 22, 0.78);
+      backdrop-filter: blur(24px) saturate(190%);
+      -webkit-backdrop-filter: blur(24px) saturate(190%);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-card {
+      background: rgba(16, 21, 26, 0.82);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 30px -5px rgba(0, 214, 255, 0.1);
+    }
+
+    /* Main Hero Title - Solid Luminous White with High-Contrast Depth */
+    .hero-title-white {
+      color: #FFFFFF;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.75);
+      letter-spacing: -0.03em;
+    }
+
+    .pill-badge {
+      background: linear-gradient(135deg, rgba(0, 80, 255, 0.2) 0%, rgba(0, 214, 255, 0.2) 100%);
+      border: 1px solid rgba(0, 214, 255, 0.4);
+    }
+
+    .cta-button {
+      background: linear-gradient(135deg, #0050FF 0%, #00B4D8 100%);
+      box-shadow: 0 10px 28px -4px rgba(0, 80, 255, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .cta-button:hover {
+      box-shadow: 0 14px 36px 0 rgba(0, 214, 255, 0.65), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+      transform: translateY(-2px) scale(1.02);
+    }
+
+    /* Ambient Radial Void Glow */
+    .radial-void-bg {
+      background: radial-gradient(circle at 50% 50%, #1a2228 0%, #14191d 60%, #0c0f12 100%);
+    }
+
+    /* Hero Static High-Resolution Background Vignette & Sharp Rendering */
+    .hero-bg-img {
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+      image-rendering: auto;
+      will-change: transform;
+    }
+
+    .hero-bg-vignette {
+      background: radial-gradient(ellipse at 50% 36%, transparent 12%, rgba(10, 13, 16, 0.45) 52%, #0A0D10 96%);
+    }
+
+    .hero-text-shadow {
+      text-shadow: 0 4px 28px rgba(0, 0, 0, 0.85), 0 2px 8px rgba(0, 0, 0, 0.9);
+    }
+
+
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #0c0f12; }
+    ::-webkit-scrollbar-thumb { background: #1e262c; border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #00D6FF; }
+  </style>
+</head>
+<body class="radial-void-bg selection:bg-cyan-500/30 selection:text-white">
+
+  <!-- ========================================================================= -->
+  <!-- 1. APPLE-STYLE MINIMAL LUXURY NAVIGATION BAR                             -->
+  <!-- ========================================================================= -->
+  <nav id="appleNav" class="fixed top-0 left-0 w-full z-50 transition-all duration-500 px-6 sm:px-12 py-3 flex items-center justify-between text-xs tracking-wide opacity-0 -translate-y-2 pointer-events-none">
+    <!-- Brand / Product Title -->
+    <div class="flex items-center gap-3">
+      <span class="font-extrabold tracking-widest text-white text-sm flex items-center gap-1.5">
+        <span>VAANI</span>
+        <span class="text-cyan-400">ISL</span>
+        <span class="text-base">🤟</span>
+      </span>
+      <span class="h-3 w-px bg-white/20"></span>
+      <span class="text-white/80 font-medium tracking-tight text-[11px]">Real-Time Interpreter</span>
+    </div>
+
+    <!-- Center Nav Links -->
+    <div class="hidden md:flex items-center gap-8 text-white/70 font-medium">
+      <a href="#hero" class="hover:text-white transition-colors">Overview</a>
+      <a href="#engineering" class="hover:text-white transition-colors">Spatial Vision</a>
+      <a href="#temporal" class="hover:text-white transition-colors">Temporal BiLSTM</a>
+      <a href="#accessibility" class="hover:text-white transition-colors">Accessibility</a>
+      <a href="#dashboard" class="text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1.5 transition-colors">
+        <span>Live Studio</span>
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+      </a>
+    </div>
+
+    <!-- Right Primary CTA -->
+    <div class="flex items-center gap-3 pointer-events-auto">
+      <button onclick="scrollToDashboard()" class="cta-button text-white font-semibold px-4 py-2 rounded-full text-xs flex items-center gap-2">
+        <span>Launch Studio</span>
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ========================================================================= -->
+  <!-- 2. HERO & ARCHITECTURE OVERVIEW                                           -->
+  <!-- ========================================================================= -->
+  <section id="hero" class="relative w-full min-h-screen flex flex-col items-center justify-center text-center px-6 pt-24 pb-16 overflow-hidden">
+    <!-- Static High-Resolution Background Frame -->
+    <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
+      <img 
+        src="/Frames/Gemini_Generated_Image_8uwytk8uwytk8uwy.png" 
+        alt="Vaani-ISL 3D Spatial Hand Landmarks" 
+        class="w-full h-full object-cover object-center hero-bg-img filter brightness-95 contrast-105"
+        loading="eager"
+        decoding="sync"
+      />
+      <!-- Ambient Vignette & Gradient Overlays for High Contrast & Text Legibility -->
+      <div class="absolute inset-0 bg-gradient-to-b from-[#14191d]/80 via-[#0c0f12]/35 to-[#0A0D10]"></div>
+      <div class="absolute inset-0 hero-bg-vignette"></div>
+    </div>
+
+    <!-- Elevated Content Layer -->
+    <div class="relative z-10 flex flex-col items-center justify-center w-full">
+      <div class="pill-badge px-4 py-1.5 rounded-full text-[11px] font-semibold text-cyan-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+        <span>AI ACCESSIBILITY & SPATIAL COMPUTING</span>
+      </div>
+      <h1 class="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tight hero-title-white mb-4">
+        Vaani-ISL
+      </h1>
+      <p class="text-xl sm:text-3xl text-white/90 font-medium max-w-2xl mb-3 tracking-tight hero-text-shadow">
+        Bridging Silence. Speaking Hands.
+      </p>
+      <p class="text-sm sm:text-base text-white/70 max-w-xl font-light leading-relaxed mb-6 hero-text-shadow">
+        Real-time dual-hand Indian Sign Language interpretation, powered by 3D spatial landmarks and temporal neural intelligence.
+      </p>
+      
+      <!-- Feature Tags -->
+      <div class="flex flex-wrap items-center justify-center gap-2 mb-8">
+        <span class="px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur border border-white/10 text-[10px] text-cyan-300 mono shadow-sm">#IndianSignLanguage</span>
+        <span class="px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur border border-white/10 text-[10px] text-slate-300 mono shadow-sm">#MediaPipe3D</span>
+        <span class="px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur border border-white/10 text-[10px] text-indigo-300 mono shadow-sm">#TemporalBiLSTM</span>
+        <span class="px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur border border-white/10 text-[10px] text-emerald-300 mono shadow-sm">&lt;15ms Latency</span>
+      </div>
+
+      <div class="flex flex-col sm:flex-row items-center gap-4 mb-16">
+        <button onclick="scrollToDashboard()" class="cta-button text-white font-bold px-8 py-4 rounded-2xl text-sm flex items-center gap-3 shadow-xl">
+          <span>LAUNCH LIVE INTERPRETER STUDIO</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+        </button>
+        <a href="#engineering" class="text-white/70 hover:text-white text-xs font-semibold py-2 px-4 transition-colors flex items-center gap-1.5">
+          <span>Explore Architecture</span>
+          <span>↓</span>
+        </a>
+      </div>
+
+      <!-- 3-Column Architecture Highlights -->
+      <div class="max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+        <!-- 01 Spatial Architecture -->
+        <div id="engineering" class="glass-card p-6 sm:p-8 rounded-3xl border border-white/10 flex flex-col justify-between">
+          <div>
+            <div class="text-[11px] mono text-cyan-400 tracking-widest uppercase mb-2">01 / DUAL-HAND SPATIAL ARCHITECTURE</div>
+            <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white mb-3 leading-tight">
+              Precision-mapped for every nuance.
+            </h2>
+            <p class="text-xs sm:text-sm text-white/70 leading-relaxed mb-4">
+              Unlike ASL, Indian Sign Language relies fundamentally on <b>two-handed grammar</b> and relative spatial trajectories. 
+            </p>
+            <p class="text-xs text-white/50 leading-relaxed mb-4">
+              Extracts <b>21 3D coordinates per hand (126 features)</b>, making inference scale-invariant and resilient to lighting.
+            </p>
+          </div>
+          <div class="flex gap-2 pt-2 border-t border-white/5">
+            <span class="px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-700/50 text-[10px] mono text-cyan-300">21 Joints / Hand</span>
+            <span class="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] mono text-white/60">126 Features Total</span>
+          </div>
+        </div>
+
+        <!-- 02 Temporal Sequence Intelligence -->
+        <div id="temporal" class="glass-card p-6 sm:p-8 rounded-3xl border border-cyan-500/20 flex flex-col justify-between">
+          <div>
+            <div class="text-[11px] mono text-cyan-400 tracking-widest uppercase mb-2">02 / TEMPORAL SEQUENCE INTELLIGENCE</div>
+            <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white mb-3 leading-tight">
+              Capturing motion across time.
+            </h2>
+            <div class="space-y-2 text-xs text-white/70 mb-4">
+              <div class="flex items-start gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1 shrink-0"></span>
+                <span><b>Rolling 30-frame window</b> captures continuous dynamic gestures in 1-second chunks.</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1 shrink-0"></span>
+                <span><b>Adaptive stability gating</b> eliminates flickering between gestures and resting poses.</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex gap-2 pt-2 border-t border-white/5">
+            <span class="px-2 py-0.5 rounded bg-indigo-950/60 border border-indigo-700/50 text-[10px] mono text-indigo-300">Intent Detection</span>
+            <span class="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-700/50 text-[10px] mono text-emerald-300">Zero Flicker</span>
+          </div>
+        </div>
+
+        <!-- 03 Voice Synthesis & NLP -->
+        <div id="accessibility" class="glass-card p-6 sm:p-8 rounded-3xl border border-white/10 flex flex-col justify-between">
+          <div>
+            <div class="text-[11px] mono text-cyan-400 tracking-widest uppercase mb-2">03 / VOICE & NLP GRAMMAR</div>
+            <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white mb-3 leading-tight">
+              From silent gestures to spoken voice.
+            </h2>
+            <p class="text-xs sm:text-sm text-white/70 leading-relaxed mb-4">
+              Signs are auto-corrected into grammatically fluent English and synthesized to natural speech with zero camera latency.
+            </p>
+            <p class="text-xs text-white/50 leading-relaxed mb-4">
+              Integrated <b>SQLite history archiving</b> logs conversations for medical appointments, banking, and classrooms.
+            </p>
+          </div>
+          <div class="flex gap-2 pt-2 border-t border-white/5">
+            <span class="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] mono text-white/70">Asynchronous TTS</span>
+            <span class="px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-700/50 text-[10px] mono text-cyan-300">NLP Auto-Correct</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 3. LIVE FULL-STACK VAANI-ISL INTERPRETER DASHBOARD (TRANSITION TARGET)     -->
+  <!-- ========================================================================= -->
+  <section id="dashboard" class="relative z-30 min-h-screen bg-[#0A0D10] border-t border-slate-800/80 px-6 sm:px-12 py-16 flex flex-col">
+    
+    <!-- Section Header -->
+    <div class="max-w-6xl mx-auto w-full mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+          <span class="text-xs font-bold mono text-cyan-400 uppercase tracking-widest">LIVE INTERACTIVE DEPLOYMENT</span>
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+          Vaani-ISL Studio & 3D Avatar Gateway
+        </h2>
+        <p class="text-sm text-slate-400 mt-1">
+          High-performance real-time Indian Sign Language interpretation, 3D joint mirroring, and persistent conversation archiving.
+        </p>
+      </div>
+
+      <!-- Quick Auth & Mode Controls -->
+      <div class="flex items-center gap-3">
+        <button id="authBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/30 transition-all">
+          ⚡ 1-Click Judge Demo Login
+        </button>
+        <button id="historyBtn" class="glass-card px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white transition-all">
+          📜 History (<span id="historyCount">0</span>)
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Studio Grid -->
+    <div class="max-w-6xl mx-auto w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
+      
+      <!-- Left Column: 3D Holographic Hand Canvas & Camera PIP (8 cols) -->
+      <div class="lg:col-span-8 glass-card rounded-3xl overflow-hidden relative min-h-[500px] flex flex-col border border-slate-800">
+        
+        <!-- Live Telemetry Badge (Top Left of Canvas) -->
+        <div class="absolute top-4 left-4 z-20 glass-card rounded-xl p-3 mono text-[11px] text-slate-300 space-y-1 border border-slate-700/80">
+          <div class="flex items-center justify-between gap-4 text-cyan-400 font-bold border-b border-slate-700 pb-1">
+            <span>⚡ PIPELINE TELEMETRY</span>
+            <span id="wsStatus" class="text-emerald-400">CONNECTED</span>
+          </div>
+          <div class="flex justify-between gap-4"><span>Latency:</span> <span id="telemetryLatency" class="text-emerald-400 font-bold">8.4 ms</span></div>
+          <div class="flex justify-between gap-4"><span>Throughput:</span> <span id="telemetryFps" class="text-cyan-300 font-bold">48.2 FPS</span></div>
+          <div class="flex justify-between gap-4"><span>Hardware:</span> <span id="telemetryChip" class="text-slate-400">Apple Silicon</span></div>
+        </div>
+
+        <!-- Camera PIP View (Top Right of Canvas) -->
+        <div class="absolute top-4 right-4 z-20 glass-card rounded-2xl overflow-hidden w-60 shadow-2xl border border-slate-700/80">
+          <div class="bg-slate-900/90 px-3 py-1.5 text-[10px] font-semibold text-slate-400 flex justify-between items-center border-b border-slate-800">
+            <span>📷 DUAL CAMERA PIP</span>
+            <span id="handStatus" class="text-amber-400">Searching...</span>
+          </div>
+          <div class="relative w-full aspect-video bg-black">
+            <video id="webcam" class="w-full h-full object-cover transform -scale-x-100" playsinline autoplay muted></video>
+            <canvas id="pipCanvas" class="absolute inset-0 w-full h-full object-cover transform -scale-x-100 pointer-events-none"></canvas>
+            <!-- Stability Ring Overlay -->
+            <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5 pointer-events-none">
+              <svg id="stabilityRingSvg" width="44" height="44" viewBox="0 0 44 44">
+                <!-- Background ring -->
+                <circle cx="22" cy="22" r="18" stroke="rgba(255,255,255,0.1)" stroke-width="3.5" fill="none"/>
+                <!-- Animated progress ring (stroke-dashoffset controlled by JS) -->
+                <circle id="stabilityRingArc" cx="22" cy="22" r="18"
+                  stroke="#00D6FF" stroke-width="3.5" fill="none"
+                  stroke-linecap="round"
+                  stroke-dasharray="113.1" stroke-dashoffset="113.1"
+                  transform="rotate(-90 22 22)"
+                  style="transition: stroke-dashoffset 0.08s linear, stroke 0.2s"/>
+                <!-- Lock icon when stable -->
+                <text id="stabilityIcon" x="22" y="26" text-anchor="middle"
+                  font-size="11" fill="rgba(255,255,255,0.5)" font-family="sans-serif">✋</text>
+              </svg>
+              <span id="stabilityLabel" class="text-[9px] font-bold text-slate-400 tracking-widest">HOLD STILL</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Three.js 3D Interactive Hand Canvas with Ambient Holographic Grid -->
+        <div id="canvas3d" class="flex-1 w-full h-full min-h-[460px] bg-gradient-to-b from-[#0F141C] to-[#0A0D10]"></div>
+
+        <!-- Bottom Overlay: Active Sign, Mode Switcher & Confidence Bar -->
+        <div class="p-4 bg-slate-900/80 border-t border-slate-800 flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Active Sign:</span>
+            <span id="activeSign" class="text-2xl font-black text-cyan-400">Waiting...</span>
+          </div>
+
+          <!-- Interactive Engine Mode Switcher -->
+          <div class="flex items-center bg-black/60 rounded-xl p-1 border border-slate-800 text-xs">
+            <button id="modeAlphabetBtn" onclick="switchEngineMode('alphabet')" class="px-3 py-1.5 rounded-lg font-bold text-cyan-300 bg-cyan-950/80 border border-cyan-700/60 transition-all flex items-center gap-1.5 shadow-sm">
+              <span>🔤 Alphabet (A-Z)</span>
+            </button>
+            <button id="modeUnifiedBtn" onclick="switchEngineMode('unified')" class="px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
+              <span>🌐 All 46 Signs</span>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-slate-400">Confidence:</span>
+            <div class="w-24 bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700">
+              <div id="confidenceBar" class="bg-gradient-to-r from-cyan-400 to-emerald-400 h-full w-0 transition-all duration-150"></div>
+            </div>
+            <span id="confidenceText" class="mono text-xs font-bold text-slate-200">0%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Sentence Builder, Audio TTS, and Controls (4 cols) -->
+      <div class="lg:col-span-4 flex flex-col gap-6">
+        
+        <!-- Sentence Transcription & NLP Grammar Polisher Tray -->
+        <div class="glass-card rounded-3xl p-6 flex flex-col justify-between border border-slate-800 gap-4">
+          <div>
+            <!-- Header with Auto-Polish toggle -->
+            <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+              <span class="font-bold text-white flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <span>💬 ISL Grammar Assembler</span>
+              </span>
+              <label class="flex items-center gap-1.5 cursor-pointer text-[11px] text-cyan-300 font-medium select-none">
+                <input id="autoPolishToggle" type="checkbox" checked class="accent-cyan-400 rounded cursor-pointer w-3.5 h-3.5">
+                <span>Auto-Correct</span>
+              </label>
+            </div>
+
+            <!-- Raw Captured Signs Tray (Token Chips) -->
+            <div class="mb-3">
+              <div class="flex justify-between text-[10px] uppercase font-bold text-slate-400 mb-1">
+                <span>Raw Captured Signs</span>
+                <span id="tokenCountBadge" class="text-slate-400">0 signs</span>
+              </div>
+              <div id="rawTokensDisplay" class="flex flex-wrap gap-1.5 min-h-[36px] max-h-[80px] overflow-y-auto p-2 rounded-xl bg-slate-950/80 border border-slate-800/80 text-xs text-slate-400 items-center">
+                <span class="text-slate-600 italic text-[11px]">No signs captured yet...</span>
+              </div>
+            </div>
+
+            <!-- Polished Natural English Display -->
+            <div>
+              <div class="flex justify-between text-[10px] uppercase font-bold mb-1.5">
+                <span class="text-emerald-400 flex items-center gap-1">
+                  <span>✨ Polished Natural English</span>
+                </span>
+                <span id="polishStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+                  Ready
+                </span>
+              </div>
+              <div id="sentenceDisplay" class="text-lg font-bold text-white min-h-[72px] p-3 rounded-2xl bg-gradient-to-br from-black/60 to-slate-900/60 border border-cyan-800/40 leading-relaxed flex items-center shadow-inner">
+                [Perform signs to assemble sentence...]
+              </div>
+            </div>
+          </div>
+
+          <!-- Controls Toolbar: Space, Undo, Polish, Speak, Clear -->
+          <div class="flex flex-col gap-2 mt-2 pt-2 border-t border-slate-800/60">
+            <div class="flex items-center gap-2">
+              <button id="spaceBtn" title="Insert a space / word break" class="flex-1 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 border border-slate-700/60 shadow-sm active:scale-95">
+                <span>␣ Space</span>
+              </button>
+              <button id="undoBtn" title="Remove the last sign" class="flex-1 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 border border-slate-700/60 shadow-sm active:scale-95">
+                <span>⌫ Undo</span>
+              </button>
+              <button id="polishBtn" title="Force AI grammar polish" class="flex-1 px-3 py-2 bg-cyan-950/70 hover:bg-cyan-900/70 text-cyan-300 border border-cyan-700/60 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95">
+                <span id="polishBtnIcon">✨</span>
+                <span>Polish</span>
+              </button>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button id="speakBtn" class="flex-1 cta-button py-2.5 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-2 shadow-lg active:scale-95">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+                <span>Speak English</span>
+              </button>
+              <button id="clearBtn" class="px-4 py-2.5 bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-800/40 rounded-xl text-xs font-semibold transition-all active:scale-95">
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Architecture & Judge Telemetry Card -->
+        <div class="glass-card rounded-3xl p-6 flex-1 border border-slate-800 text-xs text-slate-300 space-y-3.5">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <h3 class="font-bold text-sm text-white flex items-center gap-2">
+              <span>⚙️ System Architecture</span>
+            </h3>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+              46 Active Signs
+            </span>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between">
+              <span class="text-slate-400">Backend Gateway:</span>
+              <span class="font-semibold text-white">FastAPI + WebSockets</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Spatial Feature Dim:</span>
+              <span class="font-semibold text-cyan-400">126 Keypoints (Dual Palm)</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Trained Vocabulary:</span>
+              <span class="font-semibold text-emerald-400">26 Alphabets + 20 Real Words</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Hardware Pipeline:</span>
+              <span class="font-semibold text-emerald-400">Real-Time (&lt; 15ms Latency)</span>
+            </div>
+          </div>
+
+          <!-- Vocabulary Preview Badges -->
+          <div class="pt-2 border-t border-slate-800/80">
+            <div class="text-[10px] uppercase font-bold text-slate-400 mb-1.5 flex justify-between">
+              <span>Recognized Words</span>
+              <span class="text-cyan-400">46 Total</span>
+            </div>
+            <div class="flex flex-wrap gap-1 max-h-24 overflow-y-auto pr-1">
+              <span class="px-1.5 py-0.5 bg-slate-800/80 rounded text-[10px] text-slate-300">A–Z (ISL)</span>
+              <span class="px-1.5 py-0.5 bg-cyan-950/60 border border-cyan-700/50 rounded text-[10px] text-cyan-300">doctor</span>
+              <span class="px-1.5 py-0.5 bg-cyan-950/60 border border-cyan-700/50 rounded text-[10px] text-cyan-300">pain</span>
+              <span class="px-1.5 py-0.5 bg-cyan-950/60 border border-cyan-700/50 rounded text-[10px] text-cyan-300">assistance</span>
+              <span class="px-1.5 py-0.5 bg-cyan-950/60 border border-cyan-700/50 rounded text-[10px] text-cyan-300">college</span>
+              <span class="px-1.5 py-0.5 bg-cyan-950/60 border border-cyan-700/50 rounded text-[10px] text-cyan-300">work</span>
+              <span class="px-1.5 py-0.5 bg-cyan-950/60 border border-cyan-700/50 rounded text-[10px] text-cyan-300">today</span>
+              <span class="px-1.5 py-0.5 bg-cyan-950/60 border border-cyan-700/50 rounded text-[10px] text-cyan-300">pray</span>
+              <span class="px-1.5 py-0.5 bg-cyan-950/60 border border-cyan-700/50 rounded text-[10px] text-cyan-300">you</span>
+              <span class="px-1.5 py-0.5 bg-cyan-950/60 border border-cyan-700/50 rounded text-[10px] text-cyan-300">agree</span>
+              <span class="px-1.5 py-0.5 bg-cyan-950/60 border border-cyan-700/50 rounded text-[10px] text-cyan-300">afraid</span>
+              <span class="px-1.5 py-0.5 bg-cyan-950/60 border border-cyan-700/50 rounded text-[10px] text-cyan-300">bad</span>
+              <span class="px-1.5 py-0.5 bg-cyan-950/60 border border-cyan-700/50 rounded text-[10px] text-cyan-300">stand</span>
+              <span class="px-1.5 py-0.5 bg-cyan-950/60 border border-cyan-700/50 rounded text-[10px] text-cyan-300">become</span>
+              <span class="px-1.5 py-0.5 bg-cyan-950/60 border border-cyan-700/50 rounded text-[10px] text-cyan-300">warn</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- History Drawer (Slide-Over) -->
+    <div id="historyDrawer" class="fixed top-0 right-0 h-full w-88 max-w-full glass-card z-50 transform translate-x-full transition-transform duration-300 flex flex-col p-6 border-l border-slate-700/80">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <h3 class="font-bold text-sm text-cyan-400 flex items-center gap-2">
+          <span>📜 Conversation History</span>
+        </h3>
+        <button id="closeHistory" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+      </div>
+      <div id="historyList" class="flex-1 overflow-y-auto space-y-3 py-4 text-xs">
+        <!-- Rendered History Items -->
+      </div>
+      <button id="clearHistoryBtn" class="w-full py-2.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-xl text-xs font-semibold transition-all">
+        Clear History
+      </button>
+    </div>
+
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- 4. CORE ENGINE JAVASCRIPT: HIGH-DPI SCROLLYTELLING + THREE.JS + WEBSOCKETS -->
+  <!-- ========================================================================= -->
+  <script>
+    const API_BASE = "http://localhost:8000";
+    const WS_URL = "ws://localhost:8000/ws/stream";
+
+    // -------------------------------------------------------------------------
+    // PART A: NAVIGATION & SCROLL MANAGEMENT
+    // -------------------------------------------------------------------------
+    const appleNav = document.getElementById("appleNav");
+
+    window.addEventListener("scroll", () => {
+      const scrollY = window.scrollY;
+
+      // Apple Nav Fade
+      if (scrollY > 50) {
+        appleNav.classList.remove("opacity-0", "-translate-y-2", "pointer-events-none");
+        appleNav.classList.add("opacity-100", "translate-y-0", "glass-nav");
+      } else {
+        appleNav.classList.add("opacity-0", "-translate-y-2", "pointer-events-none");
+        appleNav.classList.remove("opacity-100", "translate-y-0", "glass-nav");
+      }
+    });
+
+    function scrollToDashboard() {
+      document.getElementById("dashboard").scrollIntoView({ behavior: "smooth" });
+    }
+
+    // -------------------------------------------------------------------------
+    // PART B: HIGH-RESOLUTION THREE.JS 3D SKELETAL HAND & AMBIENT SCENE
+    // -------------------------------------------------------------------------
+    let socket;
+    let accumulatedSentence = [];
+    let lastCommittedSign = null;
+    let lastCommitTime = 0;
+    let currentUser = { id: 1, username: "Guest" };
+
+    const canvas3dContainer = document.getElementById("canvas3d");
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, canvas3dContainer.clientWidth / canvas3dContainer.clientHeight, 0.1, 1000);
+    camera.position.set(0, 0, 3.8);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+    renderer.setSize(canvas3dContainer.clientWidth, canvas3dContainer.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); // High-DPI 3D Rendering
+    canvas3dContainer.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+
+    // Ambient Holographic Starfield Particles in Background
+    const starGeometry = new THREE.BufferGeometry();
+    const starCount = 300;
+    const starPositions = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount * 3; i++) {
+      starPositions[i] = (Math.random() - 0.5) * 8;
+    }
+    starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starMaterial = new THREE.PointsMaterial({ color: 0x00D6FF, size: 0.02, transparent: true, opacity: 0.4 });
+    const stars = new THREE.Points(starGeometry, starMaterial);
+    scene.add(stars);
+
+    // Dynamic Lighting
+    scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+    const pLight1 = new THREE.PointLight(0x00D6FF, 3.0, 50);
+    pLight1.position.set(2, 3, 4);
+    scene.add(pLight1);
+
+    const pLight2 = new THREE.PointLight(0x0050FF, 2.0, 50);
+    pLight2.position.set(-2, -2, 2);
+    scene.add(pLight2);
+
+    // MediaPipe Hand Bone Connections
+    const HAND_CONNECTIONS = [
+      [0,1],[1,2],[2,3],[3,4],
+      [0,5],[5,6],[6,7],[7,8],
+      [5,9],[9,10],[10,11],[11,12],
+      [9,13],[13,14],[14,15],[15,16],
+      [13,17],[17,18],[18,19],[19,20],[0,17]
+    ];
+
+    // Create 3D Hand Mesh Generator (Left & Right Hands)
+    function create3DHand(colorHex, emissiveHex) {
+      const joints = [];
+      const bones = [];
+      const material = new THREE.MeshStandardMaterial({
+        color: colorHex,
+        emissive: emissiveHex,
+        emissiveIntensity: 0.6,
+        roughness: 0.1,
+        metalness: 0.9
+      });
+      const geo = new THREE.SphereGeometry(0.042, 24, 24);
+
+      for (let i = 0; i < 21; i++) {
+        const sphere = new THREE.Mesh(geo, material);
+        sphere.position.set(0, -999, 0); // Hide until tracked
+        scene.add(sphere);
+        joints.push(sphere);
+      }
+
+      const lineMaterial = new THREE.LineBasicMaterial({ color: colorHex, linewidth: 3, transparent: true, opacity: 0.8 });
+      HAND_CONNECTIONS.forEach(([i, j]) => {
+        const lineGeo = new THREE.BufferGeometry().setFromPoints([joints[i].position, joints[j].position]);
+        const line = new THREE.Line(lineGeo, lineMaterial);
+        scene.add(line);
+        bones.push({ line, i, j });
+      });
+
+      return { joints, bones };
+    }
+
+    const hand3D_Left = create3DHand(0x00D6FF, 0x0050FF);   // Cyan/Blue (Left Hand)
+    const hand3D_Right = create3DHand(0x38BDF8, 0x6366F1);  // Electric Sky (Right Hand)
+
+    function updateHandBones(hand3D) {
+      hand3D.bones.forEach(({ line, i, j }) => {
+        line.geometry.setFromPoints([hand3D.joints[i].position, hand3D.joints[j].position]);
+      });
+    }
+
+    function animate3D() {
+      requestAnimationFrame(animate3D);
+      stars.rotation.y += 0.0005;
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate3D();
+
+    window.addEventListener("resize", () => {
+      if (canvas3dContainer.clientWidth > 0) {
+        camera.aspect = canvas3dContainer.clientWidth / canvas3dContainer.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(canvas3dContainer.clientWidth, canvas3dContainer.clientHeight);
+      }
+    });
+
+    // -------------------------------------------------------------------------
+    // STABILITY GATE STATE — Intent Detection Variables
+    // -------------------------------------------------------------------------
+    // Hand motion tolerance between frames (0–1 normalized coords).
+    // 0.018 accommodates slight natural tremor while catching intentional holds.
+    const STABILITY_THRESHOLD = 0.018;
+
+    // Consecutive stable frames before committing a sign (~0.5s at 30fps).
+    const STABILITY_FRAMES_REQUIRED = 15;
+
+    // Cooldown in ms after committing a sign before allowing another commit
+    const STABILITY_COOLDOWN_MS = 1400;
+
+    let stabilityCounter = 0;          // Consecutive stable frames so far
+    let lastLandmarkSnapshot = null;   // Previous frame's landmark list (flat)
+    let stabilityFired = false;        // Did we already fire for this stable hold?
+    let lastFireTime = 0;              // Timestamp of last sign commit (for cooldown)
+
+    const stabilityArc   = document.getElementById("stabilityRingArc");
+    const stabilityIcon  = document.getElementById("stabilityIcon");
+    const stabilityLabel = document.getElementById("stabilityLabel");
+    const RING_CIRCUMFERENCE = 113.1;  // 2π × 18 (SVG circle radius)
+
+    function updateStabilityRing(progress) {
+      // progress: 0.0 (empty) → 1.0 (full)
+      const offset = RING_CIRCUMFERENCE * (1 - progress);
+      stabilityArc.setAttribute("stroke-dashoffset", offset.toFixed(2));
+      if (progress >= 1.0) {
+        stabilityArc.setAttribute("stroke", "#00FF99");  // Green when locked
+        stabilityIcon.textContent = "🔒";
+        stabilityLabel.textContent = "LOCKED";
+        stabilityLabel.style.color = "#00FF99";
+      } else if (progress > 0.4) {
+        stabilityArc.setAttribute("stroke", "#00D6FF");  // Cyan while building
+        stabilityIcon.textContent = "✋";
+        stabilityLabel.textContent = "HOLD STILL";
+        stabilityLabel.style.color = "";
+      } else {
+        stabilityArc.setAttribute("stroke", "rgba(255,255,255,0.25)");
+        stabilityIcon.textContent = "✋";
+        stabilityLabel.textContent = "HOLD STILL";
+        stabilityLabel.style.color = "";
+      }
+    }
+
+    // Computes mean absolute displacement between two flat landmark arrays.
+    // Returns a number in normalized coords (0–1 range).
+    function computeMotion(prev, curr) {
+      if (!prev || prev.length !== curr.length) return 1.0;
+      let totalDelta = 0;
+      const n = curr.length;
+      for (let i = 0; i < n; i++) {
+        totalDelta += Math.abs(curr[i] - prev[i]);
+      }
+      return totalDelta / n;
+    }
+
+    // Engine Mode Switcher (Alphabet Precision vs Unified 46 Signs)
+    let currentMode = "alphabet";
+    async function switchEngineMode(mode) {
+      currentMode = mode;
+      const alphaBtn = document.getElementById("modeAlphabetBtn");
+      const unifiedBtn = document.getElementById("modeUnifiedBtn");
+      if (mode === "alphabet") {
+        alphaBtn.className = "px-3 py-1.5 rounded-lg font-bold text-cyan-300 bg-cyan-950/80 border border-cyan-700/60 transition-all flex items-center gap-1.5 shadow-sm";
+        unifiedBtn.className = "px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-1.5";
+      } else {
+        unifiedBtn.className = "px-3 py-1.5 rounded-lg font-bold text-cyan-300 bg-cyan-950/80 border border-cyan-700/60 transition-all flex items-center gap-1.5 shadow-sm";
+        alphaBtn.className = "px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-1.5";
+      }
+      try {
+        await fetch(`${API_BASE}/api/mode/${mode}`, { method: "POST" });
+      } catch (err) {
+        console.error("Mode switch error:", err);
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // PART C: WEBSOCKET GATEWAY & LIVE TELEMETRY
+    // -------------------------------------------------------------------------
+    function initWebSocket() {
+      socket = new WebSocket(WS_URL);
+      socket.onopen = () => {
+        document.getElementById("wsStatus").innerText = "CONNECTED";
+        document.getElementById("wsStatus").className = "text-emerald-400 font-bold";
+      };
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        handlePrediction(data);
+      };
+      socket.onclose = () => {
+        document.getElementById("wsStatus").innerText = "RECONNECTING...";
+        document.getElementById("wsStatus").className = "text-amber-400 font-bold";
+        setTimeout(initWebSocket, 2000);
+      };
+    }
+    initWebSocket();
+    // Guarantee backend is synced to high-precision alphabet mode on load
+    switchEngineMode("alphabet");
+
+    // Tracks latest live prediction received from backend
+    let latestLivePrediction = { sign: "", confidence: 0 };
+
+    // Debounce timer for auto-polishing
+    let polishDebounceTimer = null;
+    let latestPolishedSentence = "";
+
+    // Renders visual badges for each captured sign in the raw token tray
+    function renderRawTokens() {
+      const container = document.getElementById("rawTokensDisplay");
+      const badge = document.getElementById("tokenCountBadge");
+      if (!container) return;
+
+      badge.innerText = `${accumulatedSentence.length} sign${accumulatedSentence.length === 1 ? '' : 's'}`;
+
+      if (accumulatedSentence.length === 0) {
+        container.innerHTML = `<span class="text-slate-600 italic text-[11px]">No signs captured yet...</span>`;
+        return;
+      }
+
+      container.innerHTML = "";
+      accumulatedSentence.forEach((token, idx) => {
+        const chip = document.createElement("span");
+        if (token === " " || token === "_") {
+          chip.className = "px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono text-[10px] border border-slate-700 select-none";
+          chip.innerText = "␣";
+          chip.title = "Word break";
+        } else if (token.length === 1) {
+          // Alphabet letter
+          chip.className = "px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 font-bold border border-cyan-700/60 font-mono text-xs shadow-sm";
+          chip.innerText = token;
+        } else {
+          // Word-level gesture
+          chip.className = "px-2.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 font-semibold border border-emerald-700/60 text-xs shadow-sm";
+          chip.innerText = token;
+        }
+        container.appendChild(chip);
+      });
+      // Scroll to newest token
+      container.scrollLeft = container.scrollWidth;
+    }
+
+    // Sends raw sign tokens to the backend NLP engine for grammar correction
+    async function polishSentence(force = false) {
+      if (accumulatedSentence.length === 0) {
+        document.getElementById("sentenceDisplay").innerText = "[Perform signs to assemble sentence...]";
+        document.getElementById("polishStatusBadge").innerText = "Ready";
+        document.getElementById("polishStatusBadge").className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono";
+        return;
+      }
+
+      const statusBadge = document.getElementById("polishStatusBadge");
+      const polishBtnIcon = document.getElementById("polishBtnIcon");
+      if (statusBadge) statusBadge.innerText = "Polishing...";
+      if (polishBtnIcon) polishBtnIcon.className = "inline-block animate-spin";
+
+      try {
+        const res = await fetch(`${API_BASE}/api/polish-sentence`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tokens: accumulatedSentence })
+        });
+        const data = await res.json();
+        const display = document.getElementById("sentenceDisplay");
+
+        latestPolishedSentence = data.polished_sentence || accumulatedSentence.join(" ");
+        display.innerText = latestPolishedSentence;
+
+        if (statusBadge) {
+          if (data.source === "llm") {
+            statusBadge.innerText = "✨ AI Polished";
+            statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-semibold";
+          } else {
+            statusBadge.innerText = "✓ NLP Corrected";
+            statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-semibold";
+          }
+        }
+
+        // Auto-save polished sentence to SQLite history
+        fetch(`${API_BASE}/api/history`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: currentUser.id,
+            sentence: latestPolishedSentence,
+            mode: currentMode,
+            confidence: latestLivePrediction.confidence || 0.95
+          })
+        }).then(() => loadHistory());
+
+      } catch (err) {
+        console.error("Sentence polish error:", err);
+        if (statusBadge) statusBadge.innerText = "Raw Assembled";
+        document.getElementById("sentenceDisplay").innerText = accumulatedSentence.join(" ");
+      } finally {
+        if (polishBtnIcon) polishBtnIcon.className = "";
+      }
+    }
+
+    // Debounced trigger for auto-polish
+    function triggerAutoPolish(delay = 650) {
+      const toggle = document.getElementById("autoPolishToggle");
+      if (toggle && !toggle.checked) {
+        document.getElementById("sentenceDisplay").innerText = accumulatedSentence.join(" ");
+        return;
+      }
+      clearTimeout(polishDebounceTimer);
+      polishDebounceTimer = setTimeout(() => polishSentence(), delay);
+    }
+
+    // Commits a confirmed sign to the sentence construction buffer
+    function commitCurrentSign(sign, confidence) {
+      const now = Date.now();
+      if (!sign || sign === "Waiting..." || sign === "Detecting...") return;
+      if (sign === lastCommittedSign && (now - lastCommitTime) < 1800) return;
+
+      accumulatedSentence.push(sign);
+      lastCommittedSign = sign;
+      lastCommitTime = now;
+
+      // Update raw tokens display
+      renderRawTokens();
+
+      // Visual pulse animation on sentence display
+      const display = document.getElementById("sentenceDisplay");
+      display.style.transition = "transform 0.15s ease, border-color 0.15s ease";
+      display.style.transform = "scale(1.02)";
+      display.style.borderColor = "#00FF99";
+      setTimeout(() => {
+        display.style.transform = "scale(1.0)";
+        display.style.borderColor = "";
+      }, 250);
+
+      // Trigger NLP grammar polisher
+      triggerAutoPolish(650);
+    }
+
+    function handlePrediction(data) {
+      const { sign, confidence, telemetry } = data;
+
+      if (telemetry) {
+        document.getElementById("telemetryLatency").innerText = `${telemetry.latency_ms} ms`;
+        document.getElementById("telemetryFps").innerText = `${telemetry.fps} FPS`;
+        document.getElementById("telemetryChip").innerText = telemetry.hardware;
+      }
+
+      latestLivePrediction = { sign: sign || "", confidence: confidence || 0, accepted: data.accepted === true };
+      if (!latestLivePrediction.accepted) {
+        stabilityCounter = 0;
+        stabilityFired = false;
+      }
+
+      // Update Live Inference UI continuously
+      document.getElementById("activeSign").innerText = sign || "Detecting...";
+      const confPercent = data.accepted === true ? Math.round((confidence || 0) * 100) : 0;
+      document.getElementById("confidenceBar").style.width = `${confPercent}%`;
+      document.getElementById("confidenceText").innerText = data.accepted === true ? `${confPercent}%` : "—";
+    }
+
+    // -------------------------------------------------------------------------
+    // PART D: DUAL-HAND MEDIAPIPE WEBCAM TRACKING (2 HANDS)
+    // -------------------------------------------------------------------------
+    const videoElement = document.getElementById("webcam");
+    const pipCanvas = document.getElementById("pipCanvas");
+    const pipCtx = pipCanvas.getContext("2d");
+
+    const hands = new Hands({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+    });
+
+    // Lower confidence threshold slightly to reliably catch both hands
+    hands.setOptions({
+      maxNumHands: 2,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.35,
+      minTrackingConfidence: 0.35
+    });
+
+    hands.onResults((results) => {
+      // Sync canvas dimensions with video
+      if (videoElement.videoWidth && pipCanvas.width !== videoElement.videoWidth) {
+        pipCanvas.width = videoElement.videoWidth;
+        pipCanvas.height = videoElement.videoHeight;
+      }
+
+      // Clear PIP overlay
+      pipCtx.clearRect(0, 0, pipCanvas.width, pipCanvas.height);
+
+      const detectedCount = results.multiHandLandmarks ? results.multiHandLandmarks.length : 0;
+
+      if (detectedCount > 0) {
+        document.getElementById("handStatus").innerText = `${detectedCount} Hand${detectedCount > 1 ? 's' : ''} Detected`;
+        document.getElementById("handStatus").className = detectedCount > 1 ? "text-emerald-400 font-bold" : "text-cyan-400 font-bold";
+
+        // Full 126 coordinate vector: [63 Left Hand] + [63 Right Hand]
+        const fullVector = new Array(126).fill(0.0);
+
+        // Flat snapshot of all visible landmark coords for motion comparison
+        const currentSnapshot = [];
+
+        // Reset 3D hands
+        for (let i = 0; i < 21; i++) {
+          hand3D_Left.joints[i].position.set(0, -999, 0);
+          hand3D_Right.joints[i].position.set(0, -999, 0);
+        }
+
+        results.multiHandLandmarks.forEach((landmarks, hIdx) => {
+          // Draw 2D skeletal landmarks directly on the webcam PIP for visual feedback!
+          if (window.drawConnectors && window.drawLandmarks) {
+            drawConnectors(pipCtx, landmarks, HAND_CONNECTIONS, { color: hIdx === 0 ? '#00D6FF' : '#38BDF8', lineWidth: 3 });
+            drawLandmarks(pipCtx, landmarks, { color: '#FFFFFF', lineWidth: 1, radius: 3 });
+          }
+
+          // Use screen position (X coordinate of wrist) to determine Left vs Right Hand.
+          // Training data was shot non-mirrored (person facing camera, third-person view).
+          // Browser webcam IS mirrored, so MediaPipe handedness labels are inverted.
+          // "Left" from MediaPipe in selfie = person's physical Right hand in reality.
+          // We un-invert here to match training data perspective.
+          let isRightHandSlot = false;
+
+          if (results.multiHandedness && results.multiHandedness[hIdx]) {
+            // MediaPipe selfie mode inverts labels: "Right" label = physical Left hand
+            // We flip it to match training data which used physical hand identity
+            isRightHandSlot = (results.multiHandedness[hIdx].label === "Left");
+          } else {
+            // Fallback: in mirrored view, hand on left screen side = physical right hand
+            isRightHandSlot = (landmarks[0].x < 0.5);
+          }
+
+          const target3D = isRightHandSlot ? hand3D_Right : hand3D_Left;
+          const offsetStart = isRightHandSlot ? 63 : 0;
+          const spatialXOffset = isRightHandSlot ? 0.85 : -0.85;
+
+          landmarks.forEach((lm, idx) => {
+            // 3D positioning in Three.js scene (keep mirrored for visual correctness)
+            const x = (lm.x - 0.5) * -2.4 + spatialXOffset;
+            const y = (0.5 - lm.y) * 2.4;
+            const z = -lm.z * 2.2;
+            target3D.joints[idx].position.set(x, y, z);
+
+            // Pack into 126-D feature vector.
+            // Mirror x (1 - lm.x) to convert from selfie/mirrored webcam space
+            // to the non-mirrored coordinate space used in training data images.
+            const mirroredX = 1.0 - lm.x;
+            fullVector[offsetStart + idx * 3]     = mirroredX;
+            fullVector[offsetStart + idx * 3 + 1] = lm.y;
+            fullVector[offsetStart + idx * 3 + 2] = lm.z;
+
+            // Track raw x,y per landmark for motion detection (stability gate)
+            currentSnapshot.push(lm.x, lm.y);
+          });
+
+          updateHandBones(target3D);
+        });
+
+        // Continuous live streaming to backend WebSocket for real-time visual feedback
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({
+            landmarks: fullVector,
+            hands: results.multiHandLandmarks.map(hand => hand.map(lm => [lm.x, lm.y, lm.z])),
+            frame_width: videoElement.videoWidth,
+            frame_height: videoElement.videoHeight
+          }));
+        }
+
+        // ── STABILITY GATE: INTENT DETECTION ────────────────────────────────
+        // Compute displacement between frames to detect deliberate holds
+        const motion = computeMotion(lastLandmarkSnapshot, currentSnapshot);
+        lastLandmarkSnapshot = currentSnapshot;
+
+        const inCooldown = (Date.now() - lastFireTime) < STABILITY_COOLDOWN_MS;
+
+        if (motion < STABILITY_THRESHOLD && !inCooldown) {
+          // Hand is holding still — increment stability counter
+          stabilityCounter = Math.min(stabilityCounter + 1, STABILITY_FRAMES_REQUIRED);
+        } else {
+          // Hand moved or is in cooldown
+          if (motion >= STABILITY_THRESHOLD) {
+            stabilityFired = false; // Re-arm once user intentionally moves hand
+          }
+          stabilityCounter = Math.max(0, stabilityCounter - 2); // Smooth decay rather than sudden drop
+        }
+
+        // Update the visual stability ring
+        const progress = stabilityCounter / STABILITY_FRAMES_REQUIRED;
+        updateStabilityRing(progress);
+
+        // Commit sign when stability hold reaches 100% and sign is valid
+        if (stabilityCounter >= STABILITY_FRAMES_REQUIRED && !stabilityFired) {
+          if (
+            latestLivePrediction.accepted === true &&
+            latestLivePrediction.sign &&
+            latestLivePrediction.sign !== "Waiting..." &&
+            latestLivePrediction.sign !== "Detecting..."
+          ) {
+            stabilityFired = true;
+            lastFireTime = Date.now();
+            commitCurrentSign(latestLivePrediction.sign, latestLivePrediction.confidence);
+          }
+        }
+        // ────────────────────────────────────────────────────────────────────
+
+      } else {
+        // No hands — reset stability state and indicators
+        document.getElementById("handStatus").innerText = "Searching Hands...";
+        document.getElementById("handStatus").className = "text-amber-400";
+
+        stabilityCounter = 0;
+        stabilityFired = false;
+        lastLandmarkSnapshot = null;
+        updateStabilityRing(0);
+        latestLivePrediction = { sign: "", confidence: 0 };
+        document.getElementById("activeSign").innerText = "Waiting...";
+        document.getElementById("confidenceBar").style.width = "0%";
+        document.getElementById("confidenceText").innerText = "0%";
+
+        for (let i = 0; i < 21; i++) {
+          hand3D_Left.joints[i].position.set(0, -999, 0);
+          hand3D_Right.joints[i].position.set(0, -999, 0);
+        }
+        updateHandBones(hand3D_Left);
+        updateHandBones(hand3D_Right);
+      }
+    });
+
+
+    const cameraUtils = new Camera(videoElement, {
+      onFrame: async () => {
+        await hands.send({ image: videoElement });
+      },
+      width: 640,
+      height: 480
+    });
+    cameraUtils.start();
+
+    // -------------------------------------------------------------------------
+    // PART E: SPEECH SYNTHESIS & HISTORY CONTROLS
+    // -------------------------------------------------------------------------
+    // Speech Synthesis: Reads the polished natural English aloud
+    document.getElementById("speakBtn").addEventListener("click", () => {
+      const text = document.getElementById("sentenceDisplay").innerText;
+      if (text && !text.includes("[")) {
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 0.95;
+        window.speechSynthesis.speak(u);
+      }
+    });
+
+    // Space button: Appends a word boundary token
+    document.getElementById("spaceBtn").addEventListener("click", () => {
+      if (accumulatedSentence.length > 0 && accumulatedSentence[accumulatedSentence.length - 1] !== " ") {
+        accumulatedSentence.push(" ");
+        renderRawTokens();
+        triggerAutoPolish(300);
+      }
+    });
+
+    // Undo button: Removes the last committed sign
+    document.getElementById("undoBtn").addEventListener("click", () => {
+      if (accumulatedSentence.length > 0) {
+        accumulatedSentence.pop();
+        lastCommittedSign = null;
+        renderRawTokens();
+        if (accumulatedSentence.length === 0) {
+          document.getElementById("sentenceDisplay").innerText = "[Perform signs to assemble sentence...]";
+          document.getElementById("polishStatusBadge").innerText = "Ready";
+          document.getElementById("polishStatusBadge").className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono";
+        } else {
+          triggerAutoPolish(300);
+        }
+      }
+    });
+
+    // Force Polish button: Instantly sends to backend NLP engine
+    document.getElementById("polishBtn").addEventListener("click", () => {
+      polishSentence(true);
+    });
+
+    // Auto-Polish toggle switch listener
+    document.getElementById("autoPolishToggle").addEventListener("change", (e) => {
+      if (e.target.checked) {
+        triggerAutoPolish(100);
+      } else {
+        document.getElementById("sentenceDisplay").innerText = accumulatedSentence.join(" ");
+        document.getElementById("polishStatusBadge").innerText = "Raw Tokens";
+        document.getElementById("polishStatusBadge").className = "text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-mono";
+      }
+    });
+
+    // Clear button: Resets all buffers, displays, and states
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      accumulatedSentence = [];
+      lastCommittedSign = null;
+      latestPolishedSentence = "";
+      renderRawTokens();
+      document.getElementById("sentenceDisplay").innerText = "[Perform signs to assemble sentence...]";
+      document.getElementById("polishStatusBadge").innerText = "Ready";
+      document.getElementById("polishStatusBadge").className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono";
+    });
+
+    // History Drawer
+    const historyDrawer = document.getElementById("historyDrawer");
+    document.getElementById("historyBtn").addEventListener("click", () => {
+      historyDrawer.classList.toggle("translate-x-full");
+      loadHistory();
+    });
+    document.getElementById("closeHistory").addEventListener("click", () => {
+      historyDrawer.classList.add("translate-x-full");
+    });
+
+    async function loadHistory() {
+      try {
+        const res = await fetch(`${API_BASE}/api/history?user_id=${currentUser.id}`);
+        const data = await res.json();
+        const list = document.getElementById("historyList");
+        list.innerHTML = "";
+        document.getElementById("historyCount").innerText = data.history.length;
+
+        data.history.forEach(item => {
+          const div = document.createElement("div");
+          div.className = "bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-xs";
+          div.innerHTML = `
+            <div class="flex justify-between text-[10px] text-slate-500 mb-1">
+              <span>${item.timestamp}</span>
+              <span class="text-cyan-400 font-bold">${Math.round(item.confidence * 100)}%</span>
+            </div>
+            <div class="font-medium text-slate-200">${item.sentence}</div>
+          `;
+          list.appendChild(div);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    loadHistory();
+
+    document.getElementById("clearHistoryBtn").addEventListener("click", async () => {
+      await fetch(`${API_BASE}/api/history?user_id=${currentUser.id}`, { method: "DELETE" });
+      loadHistory();
+    });
+
+    // 1-Click Judge Demo Login
+    document.getElementById("authBtn").addEventListener("click", async () => {
+      const res = await fetch(`${API_BASE}/api/auth/demo-login`, { method: "POST" });
+      const data = await res.json();
+      currentUser = data.user;
+      document.getElementById("authBtn").innerText = `✓ Logged in: ${currentUser.username}`;
+      document.getElementById("authBtn").className = "bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-semibold";
+      loadHistory();
+    });
+  </script>
+</body>
+</html>
